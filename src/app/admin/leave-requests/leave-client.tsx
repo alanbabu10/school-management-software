@@ -1,145 +1,264 @@
 "use client";
 
-import React, { useState } from "react";
-import { CalendarOff, CheckCircle2, XCircle, Clock } from "lucide-react";
+import React, { useState, useMemo } from "react";
+import { Plus, CalendarOff } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Card } from "@/components/ui/card";
-import { Avatar } from "@/components/ui/avatar";
 import { Toast } from "@/components/ui/toast";
+import { ConfirmDialog } from "@/components/ui/ConfirmDialog";
+import { LeaveFilters } from "@/components/leave/LeaveFilters";
+import { LeaveTable } from "@/components/leave/LeaveTable";
+import { LeaveForm } from "@/components/leave/LeaveForm";
+import { ReviewModal } from "@/components/leave/ReviewModal";
+import { LeaveRequestItem, LeaveRequestFormData, ReviewLeaveFormData, StudentLeaveOption } from "@/types/leave";
+import { ClassOption } from "@/types/student";
+import { leaveService } from "@/services/leaveService";
 
-export interface LeaveRequest {
-  id: string;
-  student_name: string;
-  class_name: string;
-  from_date: string;
-  to_date: string;
-  reason: string;
-  requested_by: string;
-  status: "pending" | "approved" | "rejected";
+export interface LeaveClientProps {
+  initialRequests: LeaveRequestItem[];
+  classesList: ClassOption[];
+  studentsList: StudentLeaveOption[];
+  currentUserId?: string;
 }
 
-export default function LeaveClient() {
-  const [requests, setRequests] = useState<LeaveRequest[]>([
-    {
-      id: "1",
-      student_name: "Test Student",
-      class_name: "Class 10 - A",
-      from_date: "2026-09-10",
-      to_date: "2026-09-12",
-      reason: "Family wedding out of town.",
-      requested_by: "Robert Student (Parent)",
-      status: "pending",
-    },
-    {
-      id: "2",
-      student_name: "Alice Johnson",
-      class_name: "Class 9 - B",
-      from_date: "2026-09-02",
-      to_date: "2026-09-03",
-      reason: "Fever and doctor recommended rest.",
-      requested_by: "Mary Johnson (Parent)",
-      status: "approved",
-    },
-  ]);
+export default function LeaveClient({
+  initialRequests = [],
+  classesList = [],
+  studentsList = [],
+  currentUserId,
+}: LeaveClientProps) {
+  const [requests, setRequests] = useState<LeaveRequestItem[]>(initialRequests);
 
+  // Filters state
+  const [searchTerm, setSearchTerm] = useState("");
+  const [selectedStatus, setSelectedStatus] = useState("ALL");
+  const [selectedClass, setSelectedClass] = useState("ALL");
+
+  // Modals state
+  const [isFormOpen, setIsFormOpen] = useState(false);
+  const [reviewingRequest, setReviewingRequest] = useState<LeaveRequestItem | null>(null);
+  const [deletingRequest, setDeletingRequest] = useState<LeaveRequestItem | null>(null);
+
+  // Status state
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [toastMessage, setToastMessage] = useState("");
 
-  const handleStatusChange = (id: string, newStatus: "approved" | "rejected") => {
-    setRequests((prev) =>
-      prev.map((r) => (r.id === id ? { ...r, status: newStatus } : r))
-    );
-    setToastMessage(`Leave request marked as ${newStatus}.`);
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
     setTimeout(() => setToastMessage(""), 4000);
+  };
+
+  const refreshRequests = async () => {
+    setIsLoading(true);
+    try {
+      const data = await leaveService.fetchLeaveRequests();
+      setRequests(data);
+    } catch (err) {
+      console.error("Error refreshing leave requests:", err);
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // Filtered requests
+  const filteredRequests = useMemo(() => {
+    return requests.filter((r) => {
+      // Status filter
+      if (selectedStatus !== "ALL") {
+        if (r.status !== selectedStatus) {
+          return false;
+        }
+      }
+
+      // Class filter
+      if (selectedClass !== "ALL") {
+        if (String(r.students?.class_id) !== String(selectedClass)) {
+          return false;
+        }
+      }
+
+      // Search term filter
+      if (searchTerm.trim()) {
+        const query = searchTerm.toLowerCase();
+        const studentMatch = r.students?.full_name?.toLowerCase().includes(query);
+        const admMatch = r.students?.admission_number?.toLowerCase().includes(query);
+        const reasonMatch = r.reason?.toLowerCase().includes(query);
+
+        if (!studentMatch && !admMatch && !reasonMatch) {
+          return false;
+        }
+      }
+
+      return true;
+    });
+  }, [requests, selectedStatus, selectedClass, searchTerm]);
+
+  // Handle Admin Submit Leave Request (On Behalf)
+  const handleCreateLeaveSubmit = async (formData: LeaveRequestFormData) => {
+    setIsSaving(true);
+    try {
+      await leaveService.createLeaveRequest(formData, currentUserId);
+      showToast("Leave request submitted successfully!");
+      setIsFormOpen(false);
+      await refreshRequests();
+    } catch (err: any) {
+      console.error("Create leave request error:", err);
+      throw err;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Quick Approve
+  const handleQuickApprove = async (request: LeaveRequestItem) => {
+    setIsSaving(true);
+    try {
+      await leaveService.reviewLeaveRequest(
+        {
+          request_id: request.id,
+          status: "approved",
+          remarks: "Approved by Admin",
+        },
+        currentUserId
+      );
+      showToast("Leave request approved!");
+      await refreshRequests();
+    } catch (err: any) {
+      console.error("Quick approve error:", err);
+      showToast(err.message || "Failed to approve leave request.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Quick Reject
+  const handleQuickReject = async (request: LeaveRequestItem) => {
+    setIsSaving(true);
+    try {
+      await leaveService.reviewLeaveRequest(
+        {
+          request_id: request.id,
+          status: "rejected",
+          remarks: "Rejected by Admin",
+        },
+        currentUserId
+      );
+      showToast("Leave request rejected.");
+      await refreshRequests();
+    } catch (err: any) {
+      console.error("Quick reject error:", err);
+      showToast(err.message || "Failed to reject leave request.");
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Detailed Review Submit (with remarks)
+  const handleReviewSubmit = async (data: ReviewLeaveFormData) => {
+    setIsSaving(true);
+    try {
+      await leaveService.reviewLeaveRequest(data, currentUserId);
+      showToast(`Leave request ${data.status} successfully!`);
+      setReviewingRequest(null);
+      await refreshRequests();
+    } catch (err: any) {
+      console.error("Review leave error:", err);
+      throw err;
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  // Handle Confirm Delete Request
+  const handleConfirmDelete = async () => {
+    if (!deletingRequest) return;
+    setIsDeleting(true);
+    try {
+      await leaveService.deleteLeaveRequest(deletingRequest.id);
+      showToast("Leave request deleted.");
+      setDeletingRequest(null);
+      await refreshRequests();
+    } catch (err: any) {
+      console.error("Delete leave error:", err);
+      showToast(err.message || "Failed to delete leave request.");
+    } finally {
+      setIsDeleting(false);
+    }
   };
 
   return (
     <div className="space-y-6">
       <Toast message={toastMessage} onClose={() => setToastMessage("")} />
 
-      {/* Header */}
+      {/* Page Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
-          <h2 className="text-xl font-bold text-slate-900 tracking-tight">Student Leave Requests</h2>
+          <h2 className="text-xl font-bold text-slate-900 tracking-tight flex items-center gap-2">
+            <CalendarOff className="w-5 h-5 text-indigo-600" />
+            Student Leave Requests
+          </h2>
           <p className="text-xs text-slate-500 mt-0.5">
-            Review and approve leave applications submitted by parents and guardians
+            Review and approve leave applications submitted by parents or create leave entries on behalf of students
           </p>
         </div>
+
+        <Button onClick={() => setIsFormOpen(true)} icon={<Plus className="w-4 h-4" />}>
+          Submit Leave Request
+        </Button>
       </div>
 
-      {/* Table */}
-      <Card padding="none">
-        <div className="overflow-x-auto">
-          <table className="w-full text-left text-sm border-collapse">
-            <thead>
-              <tr className="bg-slate-50/80 border-b border-slate-200 text-xs font-semibold text-slate-500 uppercase tracking-wider">
-                <th className="px-6 py-3.5">Student</th>
-                <th className="px-6 py-3.5">Class</th>
-                <th className="px-6 py-3.5">Leave Duration</th>
-                <th className="px-6 py-3.5">Reason</th>
-                <th className="px-6 py-3.5">Requested By</th>
-                <th className="px-6 py-3.5">Status</th>
-                <th className="px-6 py-3.5 text-right">Actions</th>
-              </tr>
-            </thead>
-            <tbody className="divide-y divide-slate-100 text-slate-700 font-medium">
-              {requests.map((r) => (
-                <tr key={r.id} className="hover:bg-slate-50/60 transition">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <Avatar name={r.student_name} size="sm" />
-                      <span className="font-semibold text-slate-900">{r.student_name}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4"><Badge variant="primary">{r.class_name}</Badge></td>
-                  <td className="px-6 py-4 text-xs font-medium text-slate-700">
-                    {r.from_date} <span className="text-slate-400">to</span> {r.to_date}
-                  </td>
-                  <td className="px-6 py-4 text-xs text-slate-600 max-w-xs">{r.reason}</td>
-                  <td className="px-6 py-4 text-xs text-slate-500">{r.requested_by}</td>
-                  <td className="px-6 py-4">
-                    <Badge
-                      variant={
-                        r.status === "approved"
-                          ? "success"
-                          : r.status === "pending"
-                          ? "warning"
-                          : "danger"
-                      }
-                    >
-                      {r.status}
-                    </Badge>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    {r.status === "pending" ? (
-                      <div className="flex items-center justify-end gap-2">
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="bg-emerald-50 text-emerald-700 hover:bg-emerald-100 border-emerald-200"
-                          onClick={() => handleStatusChange(r.id, "approved")}
-                        >
-                          Approve
-                        </Button>
-                        <Button
-                          variant="secondary"
-                          size="sm"
-                          className="bg-rose-50 text-rose-700 hover:bg-rose-100 border-rose-200"
-                          onClick={() => handleStatusChange(r.id, "rejected")}
-                        >
-                          Reject
-                        </Button>
-                      </div>
-                    ) : (
-                      <span className="text-xs text-slate-400">Resolved</span>
-                    )}
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
-      </Card>
+      {/* Filters Bar */}
+      <LeaveFilters
+        searchTerm={searchTerm}
+        onSearchChange={setSearchTerm}
+        selectedStatus={selectedStatus}
+        onStatusChange={setSelectedStatus}
+        selectedClass={selectedClass}
+        onClassChange={setSelectedClass}
+        classesList={classesList}
+      />
+
+      {/* Leave Requests Table */}
+      <LeaveTable
+        requests={filteredRequests}
+        onQuickApprove={handleQuickApprove}
+        onQuickReject={handleQuickReject}
+        onOpenReview={(r) => setReviewingRequest(r)}
+        onDeleteRequest={(r) => setDeletingRequest(r)}
+        isLoading={isLoading}
+      />
+
+      {/* Submit Leave Request Modal */}
+      <LeaveForm
+        isOpen={isFormOpen}
+        onClose={() => setIsFormOpen(false)}
+        onSubmit={handleCreateLeaveSubmit}
+        classesList={classesList}
+        studentsList={studentsList}
+        isSaving={isSaving}
+      />
+
+      {/* Review Modal */}
+      <ReviewModal
+        isOpen={Boolean(reviewingRequest)}
+        onClose={() => setReviewingRequest(null)}
+        onSubmit={handleReviewSubmit}
+        leaveRequest={reviewingRequest}
+        isSaving={isSaving}
+      />
+
+      {/* Confirm Delete Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(deletingRequest)}
+        onClose={() => setDeletingRequest(null)}
+        onConfirm={handleConfirmDelete}
+        title="Delete Leave Request"
+        description={`Are you sure you want to delete the leave request for ${deletingRequest?.students?.full_name || "Student"}? This action cannot be undone.`}
+        confirmText="Delete Request"
+        variant="danger"
+        isLoading={isDeleting}
+      />
     </div>
   );
 }
