@@ -8,8 +8,9 @@ import { Table, Column } from "@/components/ui/Table";
 export interface StudentTableProps {
   students: Student[];
   onEdit: (student: Student) => void;
-  onDelete: (student: Student) => void;
+  onDelete?: (student: Student) => void;
   isLoading?: boolean;
+  hideDelete?: boolean;
 }
 
 export const StudentTable: React.FC<StudentTableProps> = ({
@@ -17,6 +18,7 @@ export const StudentTable: React.FC<StudentTableProps> = ({
   onEdit,
   onDelete,
   isLoading = false,
+  hideDelete = false,
 }) => {
   const columns: Column<Student>[] = [
     {
@@ -77,13 +79,15 @@ export const StudentTable: React.FC<StudentTableProps> = ({
           >
             <Edit2 className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => onDelete(s)}
-            className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
-            title="Delete Student"
-          >
-            <Trash2 className="w-4 h-4" />
-          </button>
+          {!hideDelete && onDelete && (
+            <button
+              onClick={() => onDelete(s)}
+              className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50 transition"
+              title="Delete Student"
+            >
+              <Trash2 className="w-4 h-4" />
+            </button>
+          )}
         </div>
       ),
     },

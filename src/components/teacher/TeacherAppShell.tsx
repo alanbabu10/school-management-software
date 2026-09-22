@@ -15,6 +15,7 @@ import {
   X,
   UserCheck,
   BookOpen,
+  Users,
 } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 
@@ -27,6 +28,7 @@ interface TeacherAppShellProps {
 
 export const teacherNavItems = [
   { label: "Overview", href: "/teacher/dashboard", icon: LayoutDashboard },
+  { label: "Students", href: "/teacher/students", icon: Users },
   { label: "Mark Attendance", href: "/teacher/attendance", icon: CalendarCheck },
   { label: "Homework", href: "/teacher/homework", icon: ClipboardList },
   { label: "Enter Marks", href: "/teacher/marks", icon: FileText },

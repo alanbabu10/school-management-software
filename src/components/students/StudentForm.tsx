@@ -14,6 +14,10 @@ export interface StudentFormProps {
   isSaving: boolean;
   formError?: string;
   isEditMode?: boolean;
+  /** When true, admission_number and status fields become read-only (for teacher edit) */
+  disableAdmissionFields?: boolean;
+  /** When true, the class dropdown is disabled (for teacher — class is pre-filled) */
+  lockClassId?: boolean;
 }
 
 export const StudentForm: React.FC<StudentFormProps> = ({
@@ -25,6 +29,8 @@ export const StudentForm: React.FC<StudentFormProps> = ({
   isSaving,
   formError,
   isEditMode = false,
+  disableAdmissionFields = false,
+  lockClassId = false,
 }) => {
   const updateField = (field: keyof StudentFormData, value: string) => {
     onChange({ ...formData, [field]: value });
@@ -71,6 +77,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             value={formData.admission_number}
             onChange={(e) => updateField("admission_number", e.target.value)}
             required
+            disabled={disableAdmissionFields}
           />
           <Input
             label="Full Name *"
@@ -99,6 +106,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             label="Assigned Class"
             value={formData.class_id}
             onChange={(e) => updateField("class_id", e.target.value)}
+            disabled={lockClassId || disableAdmissionFields}
             options={[
               { label: "Select a Class...", value: "" },
               ...classesList.map((c) => ({
@@ -111,6 +119,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             label="Status"
             value={formData.status}
             onChange={(e) => updateField("status", e.target.value)}
+            disabled={disableAdmissionFields}
             options={[
               { label: "Active", value: "active" },
               { label: "Inactive", value: "inactive" },
