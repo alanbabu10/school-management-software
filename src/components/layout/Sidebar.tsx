@@ -85,7 +85,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
       {/* Sidebar Container */}
       <aside
         className={`fixed top-0 bottom-0 left-0 z-40 flex flex-col bg-white border-r border-slate-200 transition-all duration-300 ease-in-out ${
-          isCollapsed ? "w-[72px]" : "w-[250px]"
+          isCollapsed ? "w-[72px]" : "w-[260px]"
         } ${
           isMobileOpen ? "translate-x-0 w-[260px]" : "-translate-x-full lg:translate-x-0"
         }`}
@@ -98,11 +98,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex flex-col truncate">
-                <span className="font-bold text-slate-900 text-sm tracking-tight leading-none">
-                  Apex Academy
+                <span className="font-bold text-slate-900 text-xs tracking-tight leading-snug truncate">
+                  St MARY's L P School
                 </span>
-                <span className="text-[11px] text-slate-500 font-medium mt-1">
-                  School Management
+                <span className="text-[10px] text-slate-500 font-medium truncate">
+                  Pallippuram
                 </span>
               </div>
             )}

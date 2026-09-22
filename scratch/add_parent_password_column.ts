@@ -1,0 +1,28 @@
+import { createClient } from "@supabase/supabase-js";
+import fs from "fs";
+
+const envText = fs.readFileSync(".env.local", "utf8");
+const envVars: Record<string, string> = {};
+envText.split("\n").forEach((line) => {
+  const [k, v] = line.split("=");
+  if (k && v) envVars[k.trim()] = v.trim();
+});
+
+const supabaseUrl = envVars["NEXT_PUBLIC_SUPABASE_URL"];
+const supabaseKey = envVars["NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY"];
+
+const supabase = createClient(supabaseUrl, supabaseKey);
+
+async function checkAndAddParentPassword() {
+  console.log("Checking parent_password column in students table...");
+  const { data, error } = await supabase.from("students").select("parent_password").limit(1);
+
+  if (error) {
+    console.log("parent_password error:", error.message);
+  } else {
+    console.log("parent_password column ALREADY EXISTS!");
+    return;
+  }
+}
+
+checkAndAddParentPassword();

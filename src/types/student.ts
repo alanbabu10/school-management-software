@@ -7,11 +7,12 @@ export interface Student {
   class_id?: string | null;
   parent_name?: string | null;
   parent_phone?: string | null;
+  parent_password?: string | null;
   phone?: string | null;
   address?: string | null;
   status: string;
   created_at?: string;
-  classes?: { id: string; name: string } | null;
+  classes?: { id: string; name: string; division?: string | null } | null;
 }
 
 export interface ClassOption {
@@ -29,6 +30,7 @@ export interface StudentFormData {
   class_id: string;
   parent_name: string;
   parent_phone: string;
+  parent_password: string;
   phone: string;
   address: string;
   status: string;

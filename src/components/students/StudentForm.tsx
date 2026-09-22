@@ -1,9 +1,9 @@
-import React from "react";
+import React, { useEffect } from "react";
 import { StudentFormData, ClassOption } from "@/types/student";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, KeyRound } from "lucide-react";
 
 export interface StudentFormProps {
   formData: StudentFormData;
@@ -28,6 +28,26 @@ export const StudentForm: React.FC<StudentFormProps> = ({
 }) => {
   const updateField = (field: keyof StudentFormData, value: string) => {
     onChange({ ...formData, [field]: value });
+  };
+
+  // Auto-generate suggested DDMM parent password if DOB is set and adding new student
+  const handleDobChange = (dobValue: string) => {
+    let suggestedPassword = formData.parent_password;
+
+    if (!isEditMode && dobValue) {
+      // Format YYYY-MM-DD -> DDMM
+      const parts = dobValue.split("-");
+      if (parts.length === 3) {
+        const [, mm, dd] = parts;
+        suggestedPassword = `${dd}${mm}`;
+      }
+    }
+
+    onChange({
+      ...formData,
+      date_of_birth: dobValue,
+      parent_password: suggestedPassword,
+    });
   };
 
   return (
@@ -63,7 +83,7 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             label="Date of Birth"
             type="date"
             value={formData.date_of_birth}
-            onChange={(e) => updateField("date_of_birth", e.target.value)}
+            onChange={(e) => handleDobChange(e.target.value)}
           />
           <Select
             label="Gender"
@@ -99,10 +119,15 @@ export const StudentForm: React.FC<StudentFormProps> = ({
         </div>
       </div>
 
+      {/* Section 2: Parent / Guardian & Login Credentials */}
       <div className="border-t border-slate-100 pt-4">
-        <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
-          2. Parent / Guardian Details
-        </h4>
+        <div className="flex items-center gap-2 mb-3">
+          <KeyRound className="w-4 h-4 text-indigo-600" />
+          <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider">
+            2. Parent / Guardian & Auth Setup
+          </h4>
+        </div>
+
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <Input
             label="Parent / Guardian Name"
@@ -111,14 +136,29 @@ export const StudentForm: React.FC<StudentFormProps> = ({
             onChange={(e) => updateField("parent_name", e.target.value)}
           />
           <Input
-            label="Parent Phone"
-            placeholder="e.g. +1 555-0192"
+            label="Parent Phone Number (Login ID)"
+            placeholder="e.g. 9876543210"
             value={formData.parent_phone}
             onChange={(e) => updateField("parent_phone", e.target.value)}
           />
+          <div className="sm:col-span-2">
+            <Input
+              label={isEditMode ? "Reset Parent Password (Optional)" : "Parent Password *"}
+              type="password"
+              placeholder={isEditMode ? "Leave blank to keep existing password" : "Enter password or pre-filled DDMM"}
+              value={formData.parent_password}
+              onChange={(e) => updateField("parent_password", e.target.value)}
+            />
+            <p className="mt-1 text-[11px] text-slate-500 font-medium">
+              {isEditMode
+                ? "Enter a new password only if resetting. Otherwise leave blank."
+                : "Parent uses their Phone Number + this Password to log into the Parent Portal."}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* Section 3: Additional Contact & Address */}
       <div className="border-t border-slate-100 pt-4">
         <h4 className="text-xs font-bold text-slate-500 uppercase tracking-wider mb-3">
           3. Additional Contact & Address

@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { UserPlus } from "lucide-react";
+import bcrypt from "bcryptjs";
 import { Student, ClassOption, StudentFormData } from "@/types/student";
 import { studentService } from "@/services/studentService";
 import { PageHeader } from "@/components/ui/PageHeader";
@@ -39,6 +40,7 @@ export default function StudentManagementClient({
     class_id: "",
     parent_name: "",
     parent_phone: "",
+    parent_password: "",
     phone: "",
     address: "",
     status: "active",
@@ -69,6 +71,7 @@ export default function StudentManagementClient({
       class_id: classesList[0]?.id || "",
       parent_name: "",
       parent_phone: "",
+      parent_password: "",
       phone: "",
       address: "",
       status: "active",
@@ -87,6 +90,7 @@ export default function StudentManagementClient({
       class_id: student.class_id || "",
       parent_name: student.parent_name || "",
       parent_phone: student.parent_phone || "",
+      parent_password: "", // Optional for reset
       phone: student.phone || "",
       address: student.address || "",
       status: student.status || "active",
@@ -129,7 +133,12 @@ export default function StudentManagementClient({
     setIsSaving(true);
 
     try {
-      const studentPayload = {
+      let hashedPassword: string | undefined = undefined;
+      if (formData.parent_password.trim()) {
+        hashedPassword = bcrypt.hashSync(formData.parent_password.trim(), 10);
+      }
+
+      const studentPayload: Partial<Student> = {
         admission_number: formData.admission_number.trim(),
         full_name: formData.full_name.trim(),
         date_of_birth: formData.date_of_birth || null,
@@ -142,6 +151,10 @@ export default function StudentManagementClient({
         status: formData.status || "active",
       };
 
+      if (hashedPassword) {
+        studentPayload.parent_password = hashedPassword;
+      }
+
       if (editingStudent) {
         const updated = await studentService.updateStudent(editingStudent.id, studentPayload);
         setStudents((prev) =>
@@ -149,7 +162,7 @@ export default function StudentManagementClient({
         );
         showToast("Student details updated successfully!");
       } else {
-        const created = await studentService.createStudent(studentPayload);
+        const created = await studentService.createStudent(studentPayload as Omit<Student, "id">);
         setStudents((prev) => [created, ...prev]);
         showToast("New student registered successfully!");
       }

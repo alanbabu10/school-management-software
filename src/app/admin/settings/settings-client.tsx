@@ -12,10 +12,10 @@ export default function SettingsClient({ userEmail }: { userEmail: string }) {
   const [toastMessage, setToastMessage] = useState("");
 
   const [schoolInfo, setSchoolInfo] = useState({
-    name: "Apex International Academy",
-    phone: "+1 555-0199",
-    email: "info@apexacademy.edu",
-    address: "100 Education Way, Silicon Valley, CA",
+    name: "St MARY's L P School Pallippuram",
+    phone: "+91 94470 00000",
+    email: "stmaryslpspallippuram@gmail.com",
+    address: "Pallippuram, Kerala, India",
     academic_year: "2026-2027",
   });
 

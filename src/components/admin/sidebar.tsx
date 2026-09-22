@@ -98,11 +98,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </div>
             {(!isCollapsed || isMobileOpen) && (
               <div className="flex flex-col truncate">
-                <span className="font-bold text-slate-900 text-sm tracking-tight leading-none">
-                  Apex Academy
+                <span className="font-bold text-slate-900 text-xs tracking-tight leading-snug truncate">
+                  St MARY's L P School
                 </span>
-                <span className="text-[11px] text-slate-500 font-medium mt-1">
-                  School Management
+                <span className="text-[10px] text-slate-500 font-medium truncate">
+                  Pallippuram
                 </span>
               </div>
             )}

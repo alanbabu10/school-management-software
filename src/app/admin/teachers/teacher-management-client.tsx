@@ -61,6 +61,7 @@ export default function TeacherManagementClient({
       employee_id: "",
       full_name: "",
       phone: "",
+      password: "password123",
       subject: subjectsList[0] || "",
       joining_date: new Date().toISOString().split("T")[0],
       status: "active",
@@ -75,6 +76,7 @@ export default function TeacherManagementClient({
       employee_id: teacher.employee_id || "",
       full_name: teacher.full_name || "",
       phone: teacher.phone || "",
+      password: "",
       subject: teacher.subject || "",
       joining_date: teacher.joining_date || "",
       status: teacher.status || "active",
@@ -101,6 +103,10 @@ export default function TeacherManagementClient({
       setFormError("Full Name is required.");
       return;
     }
+    if (!editingTeacher && (!formData.password || formData.password.trim().length < 6)) {
+      setFormError("A login password of at least 6 characters is required.");
+      return;
+    }
 
     const duplicate = teachers.find(
       (t) =>
@@ -122,6 +128,7 @@ export default function TeacherManagementClient({
           employee_id: formData.employee_id.trim(),
           full_name: formData.full_name.trim(),
           phone: formData.phone.trim() || null,
+          password: formData.password ? formData.password.trim() : undefined,
           subject: formData.subject.trim() || null,
           joining_date: formData.joining_date || null,
           status: formData.status || "active",
@@ -136,13 +143,14 @@ export default function TeacherManagementClient({
           employee_id: formData.employee_id.trim(),
           full_name: formData.full_name.trim(),
           phone: formData.phone.trim() || null,
+          password: formData.password ? formData.password.trim() : undefined,
           subject: formData.subject.trim() || null,
           joining_date: formData.joining_date || null,
           status: formData.status || "active",
         });
 
         setTeachers((prev) => [created, ...prev]);
-        showToast("New teacher registered successfully!");
+        showToast("New teacher registered successfully with login credentials!");
       }
 
       closeModal();

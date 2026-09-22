@@ -19,6 +19,8 @@ export interface TeacherFormData {
   employee_id: string;
   full_name: string;
   phone: string;
+  email?: string;
+  password?: string;
   subject: string;
   joining_date: string;
   status: string;

@@ -14,7 +14,7 @@ export const DashboardHeader: React.FC = () => {
           Good morning, Admin 👋
         </h2>
         <p className="text-indigo-100 text-sm mt-1 max-w-xl">
-          Here is what&apos;s happening across Apex Academy today. Manage students, teachers, and school operations seamlessly.
+          Welcome to St MARY&apos;s L P School Pallippuram management portal. Track attendance, manage classes, fees, and daily operations seamlessly.
         </p>
       </div>
 

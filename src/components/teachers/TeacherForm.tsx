@@ -81,6 +81,25 @@ export const TeacherForm: React.FC<TeacherFormProps> = ({
         />
       </div>
 
+      <div className="pt-2 border-t border-slate-100 space-y-3">
+        <h4 className="text-xs font-bold text-slate-800 uppercase tracking-wider">
+          {isEditMode ? "Reset Teacher Password (Optional)" : "Login Password *"}
+        </h4>
+        <Input
+          label={isEditMode ? "New Password" : "Password *"}
+          type="password"
+          placeholder={isEditMode ? "Leave blank to keep existing password" : "Enter initial password (min 6 chars)"}
+          value={formData.password || ""}
+          onChange={(e) => updateField("password", e.target.value)}
+          required={!isEditMode}
+        />
+        <p className="text-[11px] text-slate-500">
+          {isEditMode
+            ? "Enter a new password here if you want to reset this teacher's login password."
+            : "This password will be used by the teacher to log into the Teacher Portal."}
+        </p>
+      </div>
+
       <div className="flex items-center justify-end gap-3 pt-4 border-t border-slate-100">
         <Button type="button" variant="secondary" onClick={onCancel}>
           Cancel
